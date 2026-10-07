@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarkSpeak — 마크다운 낭독</title>
+  <meta name="description" content="마크다운 원고를 책을 읽듯이 소리 내어 읽어 주는 웹 페이지">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%238d3f2b' width='32' height='32' rx='6'/%3E%3Cpath fill='%23f6f1e7' d='M8 7h11.2A4.8 4.8 0 0 1 24 11.8V25H12.2A4.2 4.2 0 0 1 8 20.8V7z'/%3E%3Cpath fill='%238d3f2b' d='M11 12h8v1.4H11zm0 3.4h8v1.4H11zm0 3.4h5.2V20H11z'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="6" y="8" width="26" height="32" rx="2" fill="#f6f1e7"/>
+          <path d="M14 18h12M14 24h12M14 30h8" stroke="#8d3f2b" stroke-width="2"/>
+          <path d="M30 14h8v22a6 6 0 0 1-6 6H16" fill="none" stroke="#e7c27a" stroke-width="2"/>
+        </svg>
+        <div>
+          <h1>MarkSpeak</h1>
+          <p>마크다운을 책 읽듯이 들려줍니다</p>
+        </div>
+      </div>
+      <p class="privacy">원고는 이 브라우저 안에서만 읽히고, 서버로 보내지 않습니다.</p>
+    </header>
+
+    <main class="workspace">
+      <section class="pane editor-pane" id="editor-pane" aria-label="원고">
+        <div class="pane-bar">
+          <h2>원고</h2>
+          <span class="spacer"></span>
+          <button type="button" class="ghost" id="load-sample">예시 글</button>
+          <button type="button" class="ghost" id="open-file">파일 열기</button>
+        </div>
+        <label class="visually-hidden" for="source">마크다운 원고</label>
+        <textarea id="source" spellcheck="true" lang="ko" placeholder="마크다운을 붙여 넣거나 .md 파일을 끌어다 놓으세요."></textarea>
+        <input id="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+      </section>
+
+      <section class="pane book-pane" aria-label="책">
+        <div class="pane-bar">
+          <h2>책</h2>
+          <span id="meta" class="meta">읽을 문장 없음</span>
+        </div>
+        <p class="pane-note">문장을 누르면 그 위치부터 읽습니다. 코드 블록과 주소는 소리로 읽지 않습니다.</p>
+        <div class="book-scroll" id="book-scroll">
+          <article id="book" class="book-sheet is-empty" aria-label="읽는 본문"><div class="empty"><p>왼쪽 원고에 마크다운을 넣으면<br>이곳에 책처럼 펼쳐집니다.</p></div></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="transport" aria-label="낭독 제어">
+      <div class="transport-row">
+        <button type="button" id="prev" aria-label="이전 문장">이전</button>
+        <button type="button" id="play" class="primary" aria-pressed="false">읽기</button>
+        <button type="button" id="repeat">문장 반복</button>
+        <button type="button" id="next" aria-label="다음 문장">다음</button>
+        <button type="button" id="stop">정지</button>
+        <label class="seek-wrap">
+          <span id="seek-label">0 / 0</span>
+          <input id="seek" type="range" min="0" max="0" value="0" step="1" aria-label="읽는 위치">
+        </label>
+      </div>
+      <div class="transport-row secondary">
+        <label>속도
+          <input id="rate" type="range" min="0.6" max="1.3" step="0.05" value="0.9" aria-label="읽기 속도">
+          <span id="rate-label">0.90배</span>
+        </label>
+        <label>호흡
+          <select id="breath" aria-label="문장 사이 쉼">
+            <option value="0.7">짧게</option>
+            <option value="1" selected>책처럼</option>
+            <option value="1.5">천천히</option>
+          </select>
+        </label>
+        <label>음성
+          <select id="voice" aria-label="목소리"></select>
+        </label>
+      </div>
+      <div class="status-line">
+        <span id="status-dot" class="status-dot" hidden></span>
+        <p id="status" class="status" role="status" aria-live="polite">준비됨</p>
+      </div>
+      <p id="voice-note" class="voice-note" hidden>한국어 음성이 없습니다. Windows 설정 → 시간 및 언어 → 음성에서 한국어 음성을 추가하면 더 자연스럽습니다.</p>
+      <p class="hints">Space 읽기/일시정지 · Esc 정지 · Ctrl+Enter 읽기. 원고를 고치면 읽기는 멈춥니다.</p>
+    </footer>
+  </div>
+  <noscript><p>자바스크립트를 켜야 원고를 읽을 수 있습니다.</p></noscript>
+  <script src="js/markdown.js"></script>
+  <script src="js/reader.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
