@@ -5,8 +5,6 @@
  * cues  — 음성으로 읽을 순서. 기호·주소·코드 블록은 빠지고,
  *         쉼표·문장·문단 끝에는 서로 다른 쉼(ms)이 붙는다.
  */
-(function () {
-  "use strict";
 
   var PAUSE = {
     phrase: 220,
@@ -645,5 +643,4 @@
     return { html: html.join("\n"), cues: cues };
   }
 
-  globalThis.MarkSpeakMarkdown = { parse: parse };
-})();
+  export { parse };

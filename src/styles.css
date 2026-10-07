@@ -393,6 +393,21 @@ select {
   font-size: 0.78rem;
 }
 
+.model-progress {
+  height: 0.28rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  background: rgba(243, 234, 219, 0.12);
+  overflow: hidden;
+}
+
+.model-progress > span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--gold);
+}
+
 @keyframes pulse {
   70% { box-shadow: 0 0 0 7px rgba(231, 194, 122, 0); }
   100% { box-shadow: 0 0 0 0 rgba(231, 194, 122, 0); }
@@ -412,7 +427,7 @@ select {
   .book-sheet { padding: 1.55rem 1.05rem 1.4rem; }
   .transport { padding: 0.5rem 0.7rem 0.6rem; }
   .primary { min-width: 5.5rem; }
-  #voice { max-width: 11rem; }
+  .voice-name { max-width: 11rem; }
   .hints { display: none; }
 }
 

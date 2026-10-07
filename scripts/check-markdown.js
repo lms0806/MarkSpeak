@@ -1,10 +1,4 @@
-const fs = require("fs");
-const path = require("path");
-
-const code = fs.readFileSync(path.join(__dirname, "..", "js", "markdown.js"), "utf8");
-new Function(code)();
-
-const parse = globalThis.MarkSpeakMarkdown.parse;
+import { parse } from "../src/markdown.js";
 let failed = 0;
 
 function assert(name, condition) {
