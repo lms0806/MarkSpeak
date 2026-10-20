@@ -79,6 +79,7 @@ export default function App() {
   const scrollRef = useRef(null);
   const editorRef = useRef(null);
   const fileRef = useRef(null);
+  const dictionaryFileRef = useRef(null);
   const sourceRef = useRef("");
   const [source, setSource] = useState(readInitialSource);
   const [dictionary, setDictionary] = useState(() => storageGet(DICTIONARY_KEY) || "");
@@ -89,6 +90,9 @@ export default function App() {
   const [seekValue, setSeekValue] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [fileNote, setFileNote] = useState("");
+  const [word, setWord] = useState("");
+  const [reading, setReading] = useState("");
+  const [dictionaryNote, setDictionaryNote] = useState("");
 
   const firstRender = useRef(true);
 
@@ -168,6 +172,50 @@ export default function App() {
     if (snapshot.state === "playing" || snapshot.state === "paused") reader.stop();
     setFileNote("");
     setSource(value);
+  }
+
+  function updateDictionary(next) {
+    if (active) reader.stop();
+    setDictionary(next);
+    storageSet(DICTIONARY_KEY, next);
+  }
+
+  function saveEntry(event) {
+    event.preventDefault();
+    const key = word.trim();
+    const value = reading.trim();
+    if (!key || !value || /[=\r\n]/.test(key) || /[\r\n]/.test(value)) {
+      setDictionaryNote("원문과 발음을 입력해 주세요. 원문에는 =를 쓸 수 없습니다.");
+      return;
+    }
+    const entries = parsePronunciations(dictionary);
+    entries[key] = value;
+    updateDictionary(Object.entries(entries).map(([k, v]) => k + "=" + v).join("\n"));
+    setWord(""); setReading(""); setDictionaryNote("발음을 저장했습니다.");
+  }
+
+  function importDictionary(file) {
+    if (!file) return;
+    if (file.size > 1000000) { setDictionaryNote("1MB보다 작은 사전 파일을 선택해 주세요."); return; }
+    const loader = new FileReader();
+    loader.onload = () => {
+      const value = String(loader.result || "").replace(/^\uFEFF/, "");
+      const lines = value.split(/\r?\n/).filter((line) => line.trim());
+      if (!lines.length || lines.some((line) => !line.includes("=") || !line.slice(0, line.indexOf("=")).trim() || !line.slice(line.indexOf("=") + 1).trim())) {
+        setDictionaryNote("사전 파일은 한 줄에 원문=발음 형식으로 입력해 주세요."); return;
+      }
+      updateDictionary(value);
+      setDictionaryNote("사전을 불러왔습니다.");
+    };
+    loader.onerror = () => setDictionaryNote("사전 파일을 읽지 못했습니다.");
+    loader.readAsText(file, "utf-8");
+  }
+
+  function exportDictionary() {
+    const url = URL.createObjectURL(new Blob([dictionary], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url; link.download = "markspeak-pronunciations.txt"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function readFile(file) {
@@ -306,12 +354,24 @@ export default function App() {
           />
           <details className="dictionary">
             <summary>내 발음 사전</summary>
-            <p>한 줄에 하나씩 원문=읽을 발음을 입력하세요. 이 브라우저에 저장됩니다.</p>
-            <label className="visually-hidden" htmlFor="pronunciations">내 발음 사전</label>
-            <textarea id="pronunciations" value={dictionary} placeholder={"MarkSpeak=마크스피크\nAPI=에이피아이"} onChange={(event) => {
-              if (active) reader.stop();
-              setDictionary(event.target.value);
-            }} />
+            <p>이 브라우저에 저장됩니다. 같은 원문을 다시 저장하면 발음이 바뀝니다.</p>
+            <form className="dictionary-form" onSubmit={saveEntry}>
+              <input aria-label="사전 원문" placeholder="원문" value={word} onChange={(event) => setWord(event.target.value)} />
+              <input aria-label="읽을 발음" placeholder="읽을 발음" value={reading} onChange={(event) => setReading(event.target.value)} />
+              <button type="submit">저장</button>
+            </form>
+            <ul className="dictionary-list">{Object.entries(parsePronunciations(dictionary)).map(([key, value]) => <li key={key}>
+              <span>{key} → {value}</span>
+              <button type="button" onClick={() => { setWord(key); setReading(value); }}>수정</button>
+              <button type="button" onClick={() => { const entries = parsePronunciations(dictionary); delete entries[key]; updateDictionary(Object.entries(entries).map(([k, v]) => k + "=" + v).join("\n")); }}>삭제</button>
+            </li>)}</ul>
+            <div className="dictionary-actions">
+              <button type="button" onClick={() => dictionaryFileRef.current?.click()}>사전 가져오기</button>
+              <button type="button" onClick={exportDictionary} disabled={!dictionary.trim()}>사전 내보내기</button>
+              <input ref={dictionaryFileRef} type="file" accept=".txt,text/plain" hidden onChange={(event) => { importDictionary(event.target.files?.[0]); event.target.value = ""; }} />
+            </div>
+            <p>가져오기는 현재 사전을 선택한 파일의 내용으로 바꿉니다.</p>
+            <p role="status">{dictionaryNote}</p>
           </details>
         </section>
 
@@ -321,6 +381,12 @@ export default function App() {
             <span className="meta">{meta}</span>
           </div>
           <p className="pane-note">문장을 누르면 그 위치부터 읽습니다. 코드 블록과 주소는 소리로 읽지 않습니다.</p>
+          <details className="speech-preview">
+            <summary>읽을 문장 미리보기</summary>
+            <p>원문과 음성에 전달되는 문장을 비교합니다. 구간을 누르면 그곳부터 읽습니다.</p>
+            <ol>{cues.map((cue) => <li key={cue.id}><button type="button" onClick={() => reader.seekId(cue.id, true)}><span>{cue.original}</span><strong>{cue.text}</strong></button></li>)}</ol>
+            {!cues.length && <p>읽을 문장이 없습니다.</p>}
+          </details>
           <div className="book-scroll" ref={scrollRef}>
             <article
               ref={bookRef}

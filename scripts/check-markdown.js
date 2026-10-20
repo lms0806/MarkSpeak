@@ -1,4 +1,5 @@
 import { parse } from "../src/markdown.js";
+import { normalizeKoreanSpeech, parsePronunciations } from "../src/koreanSpeech.js";
 let failed = 0;
 
 function assert(name, condition) {
@@ -41,6 +42,14 @@ result = parse("AI와 API, MarkSpeak를 읽는다.", { AI: "인공지능", MarkS
 assert("사용자 사전은 기본 발음보다 우선", result.cues[0].text === "인공지능와 에이피아이, 마크 스피크를 읽는다.");
 assert("사전은 원문을 바꾸지 않음", result.html.includes("AI와 API, MarkSpeak"));
 assert("약어의 일부는 바꾸지 않음", texts("TRAIN과 API_key").includes("TRAIN과 API_key"));
+assert("날짜를 읽는다", normalizeKoreanSpeech("2026.10.20에") === "이천이십육 년 시 월 이십 일에");
+assert("윤일 검증", normalizeKoreanSpeech("2024-02-29") === "이천이십사 년 이 월 이십구 일" && normalizeKoreanSpeech("2025-02-29") === "2025-02-29");
+assert("버전 번호는 유지", normalizeKoreanSpeech("v2026.10.20과 2026.10.20.1") === "v2026.10.20과 2026.10.20.1");
+assert("전화번호 숫자를 각각 읽는다", normalizeKoreanSpeech("010-1234-5678") === "영 일 영, 일 이 삼 사, 오 육 칠 팔");
+assert("일반 범위는 유지", normalizeKoreanSpeech("10-20") === "10-20");
+assert("사전 파싱과 특수 문자", normalizeKoreanSpeech("C++와 AI", parsePronunciations("C++=씨플러스플러스\nAI=인공지능")) === "씨플러스플러스와 인공지능");
+result = parse("가격은 3개입니다. [안내](https://example.com)");
+assert("미리보기는 구간별 원문과 읽을 문장을 보존", result.cues[0].original === "가격은 3개입니다." && result.cues[0].text === "가격은 세 개입니다." && result.cues[1].original === "안내");
 
 result = parse("그는 **천천히** 읽었다.");
 assert("굵은 글씨 기호 제거", result.cues[0].text === "그는 천천히 읽었다.");

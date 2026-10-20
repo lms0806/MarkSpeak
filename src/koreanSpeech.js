@@ -57,7 +57,19 @@ export function normalizeKoreanSpeech(text, customWords = {}) {
   }
   const number = "(?:\\d{1,3}(?:,\\d{3})+|\\d+)";
   const boundary = "(?<![\\w가-힣.,])";
-  // Explicit units provide context; leave bare numbers, dates with separators and identifiers untouched.
+  // Require a full year and a valid calendar date to avoid interpreting version numbers as dates.
+  result = result.replace(/(?<![\w.\d])(\d{4})([./-])(\d{1,2})\2(\d{1,2})(?![\w\d]|\.\d)/g, (match, year, separator, month, day) => {
+    const y = Number(year), m = Number(month), d = Number(day);
+    const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+    const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (m < 1 || m > 12 || d < 1 || d > days[m - 1]) return match;
+    const spokenMonth = m === 6 ? "유" : m === 10 ? "시" : sinoNumber(String(m));
+    return sinoNumber(year) + " 년 " + spokenMonth + " 월 " + sinoNumber(String(d)) + " 일";
+  });
+  // Recognize hyphenated Korean phone numbers only; read each digit individually.
+  result = result.replace(/(?<![\w\d-])(01[016789]-\d{3,4}-\d{4}|02-\d{3,4}-\d{4}|0[3-6]\d-\d{3,4}-\d{4})(?![\w\d-])/g,
+    (match) => match.split("-").map((part) => [...part].map((digit) => SINO[Number(digit)]).join(" ")).join(", "));
+  // Explicit units provide context; leave bare numbers and identifiers untouched.
   result = result.replace(new RegExp("(?<![\\w가-힣.,-])(" + number + ")(시간|시|개(?!월)|명|마리|권|잔|대|살)", "g"), (match, raw, unit) => {
     const value = Number(raw.replace(/,/g, ""));
     if (value === 0) return match;

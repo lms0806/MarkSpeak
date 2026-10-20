@@ -177,6 +177,21 @@ textarea::selection { background: var(--leather); color: #fff8ee; }
 .dictionary summary { cursor: pointer; color: var(--ink-soft); }
 .dictionary p { margin: 0.45rem 0; color: var(--muted); }
 .dictionary textarea { display: block; height: 6rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
+.dictionary[open] { max-height: 45%; overflow: auto; }
+.dictionary-form, .dictionary-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.dictionary-form input { flex: 1 1 7rem; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem; background: var(--desk-raise); }
+.dictionary button { padding: 0.3rem 0.65rem; }
+.dictionary-list { list-style: none; padding: 0; margin: 0.5rem 0; }
+.dictionary-list li { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; }
+.dictionary-list li span { flex: 1; overflow-wrap: anywhere; }
+.speech-preview { padding: 0 1.15rem 0.5rem; color: var(--muted); font-size: 0.85rem; }
+.speech-preview summary { cursor: pointer; color: var(--ink-soft); }
+.speech-preview p { margin: 0.4rem 0; }
+.speech-preview ol { max-height: 12rem; overflow: auto; padding-left: 1.7rem; margin: 0.5rem 0; }
+.speech-preview li { padding: 0.2rem 0; }
+.speech-preview button { display: grid; width: 100%; gap: 0.25rem; text-align: left; border-radius: 6px; }
+.speech-preview button span { color: var(--muted); }
+.speech-preview button strong { color: var(--ink-soft); font-weight: 500; }
 
 .book-scroll {
   flex: 1;

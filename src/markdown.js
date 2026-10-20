@@ -437,6 +437,7 @@ import { normalizeKoreanSpeech } from "./koreanSpeech.js";
         cues.push({
           id: id,
           spanId: spanId,
+          original: bit,
           text: normalizeKoreanSpeech(bit, pronunciations),
           pauseAfter: index === bits.length - 1 ? pauseAfter : PAUSE.phrase,
         });
