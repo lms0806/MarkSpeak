@@ -69,6 +69,11 @@ export function normalizeKoreanSpeech(text, customWords = {}) {
   // Recognize hyphenated Korean phone numbers only; read each digit individually.
   result = result.replace(/(?<![\w\d-])(01[016789]-\d{3,4}-\d{4}|02-\d{3,4}-\d{4}|0[3-6]\d-\d{3,4}-\d{4})(?![\w\d-])/g,
     (match) => match.split("-").map((part) => [...part].map((digit) => SINO[Number(digit)]).join(" ")).join(", "));
+  result = result.replace(/(?<![\w\d:])(\d{1,2}):(\d{2})(?![\w\d:]|\.\d)/g, (match, hour, minute) => {
+    const h = Number(hour), m = Number(minute);
+    if (h > 23 || m > 59) return match;
+    return (h === 0 ? "영" : nativeNumber(h)) + " 시" + (m ? " " + sinoNumber(String(m)) + " 분" : " 정각");
+  });
   // Explicit units provide context; leave bare numbers and identifiers untouched.
   result = result.replace(new RegExp("(?<![\\w가-힣.,-])(" + number + ")(시간|시|개(?!월)|명|마리|권|잔|대|살)", "g"), (match, raw, unit) => {
     const value = Number(raw.replace(/,/g, ""));

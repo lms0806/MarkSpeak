@@ -23,8 +23,9 @@ function storageGet(key) {
 function storageSet(key, value) {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch (error) {
-    /* 저장 공간이 가득 차도 읽기는 계속된다. */
+    return false;
   }
 }
 
@@ -93,6 +94,10 @@ export default function App() {
   const [word, setWord] = useState("");
   const [reading, setReading] = useState("");
   const [dictionaryNote, setDictionaryNote] = useState("");
+  const [storageError, setStorageError] = useState(false);
+  const [dictionarySearch, setDictionarySearch] = useState("");
+  const [selectedWord, setSelectedWord] = useState("");
+  const [pauseOverrides, setPauseOverrides] = useState({});
 
   const firstRender = useRef(true);
 
@@ -102,10 +107,12 @@ export default function App() {
       const next = renderSource(source, dictionary);
       setHtml(next.html);
       setEmpty(next.empty);
-      setCues(next.cues);
-      reader.setCues(next.cues);
-      storageSet(DRAFT_KEY, source);
-      storageSet(DICTIONARY_KEY, dictionary);
+      const adjusted = next.cues.map((cue) => ({ ...cue, pauseAfter: pauseOverrides[cue.id] ?? cue.pauseAfter }));
+      setCues(adjusted);
+      reader.setCues(adjusted);
+      const draftSaved = storageSet(DRAFT_KEY, source);
+      const dictionarySaved = storageSet(DICTIONARY_KEY, dictionary);
+      setStorageError(!draftSaved || !dictionarySaved);
     };
     if (firstRender.current) {
       firstRender.current = false;
@@ -114,7 +121,7 @@ export default function App() {
     }
     const timer = setTimeout(apply, 80);
     return () => clearTimeout(timer);
-  }, [source, dictionary, reader.setCues]);
+  }, [source, dictionary, pauseOverrides, reader.setCues]);
 
   useEffect(() => {
     const book = bookRef.current;
@@ -171,13 +178,15 @@ export default function App() {
   function onSource(value) {
     if (snapshot.state === "playing" || snapshot.state === "paused") reader.stop();
     setFileNote("");
+    setPauseOverrides({});
     setSource(value);
   }
 
   function updateDictionary(next) {
     if (active) reader.stop();
     setDictionary(next);
-    storageSet(DICTIONARY_KEY, next);
+    setPauseOverrides({});
+    if (!storageSet(DICTIONARY_KEY, next)) setStorageError(true);
   }
 
   function saveEntry(event) {
@@ -234,6 +243,7 @@ export default function App() {
       setFileNote("");
       if (snapshot.state === "playing" || snapshot.state === "paused") reader.stop();
       setSource(String(loader.result || ""));
+      setPauseOverrides({});
       if (scrollRef.current) scrollRef.current.scrollTop = 0;
     };
     loader.readAsText(file, "utf-8");
@@ -324,6 +334,7 @@ export default function App() {
                 if (active) reader.stop();
                 setFileNote("");
                 setSource(SAMPLE);
+                setPauseOverrides({});
                 if (scrollRef.current) scrollRef.current.scrollTop = 0;
               }}
             >
@@ -360,7 +371,8 @@ export default function App() {
               <input aria-label="읽을 발음" placeholder="읽을 발음" value={reading} onChange={(event) => setReading(event.target.value)} />
               <button type="submit">저장</button>
             </form>
-            <ul className="dictionary-list">{Object.entries(parsePronunciations(dictionary)).map(([key, value]) => <li key={key}>
+            <label>사전 검색 <input value={dictionarySearch} onChange={(event) => setDictionarySearch(event.target.value)} /></label>
+            <ul className="dictionary-list">{Object.entries(parsePronunciations(dictionary)).filter(([key, value]) => (key + " " + value).toLowerCase().includes(dictionarySearch.toLowerCase())).map(([key, value]) => <li key={key}>
               <span>{key} → {value}</span>
               <button type="button" onClick={() => { setWord(key); setReading(value); }}>수정</button>
               <button type="button" onClick={() => { const entries = parsePronunciations(dictionary); delete entries[key]; updateDictionary(Object.entries(entries).map(([k, v]) => k + "=" + v).join("\n")); }}>삭제</button>
@@ -384,7 +396,14 @@ export default function App() {
           <details className="speech-preview">
             <summary>읽을 문장 미리보기</summary>
             <p>원문과 음성에 전달되는 문장을 비교합니다. 구간을 누르면 그곳부터 읽습니다.</p>
-            <ol>{cues.map((cue) => <li key={cue.id}><button type="button" onClick={() => reader.seekId(cue.id, true)}><span>{cue.original}</span><strong>{cue.text}</strong></button></li>)}</ol>
+            <ol>{cues.map((cue) => <li key={cue.id}><button type="button" onClick={() => reader.seek(cues.indexOf(cue), true)}><span>{cue.original}</span><strong>{cue.text}</strong></button>
+              <label>이 구간 뒤 쉼 <select value={String(pauseOverrides[cue.id] ?? "auto")} onChange={(event) => {
+                if (active) reader.stop();
+                const value = event.target.value;
+                setPauseOverrides((previous) => { const next = { ...previous }; if (value === "auto") delete next[cue.id]; else next[cue.id] = Number(value); return next; });
+              }}><option value="auto">자동</option><option value="0">없음</option><option value="220">짧게</option><option value="460">보통</option><option value="780">길게</option></select></label>
+            </li>)}</ol>
+            <p>쉼은 현재 원고에서만 적용되며 원고나 사전을 바꾸면 자동 설정으로 돌아갑니다.</p>
             {!cues.length && <p>읽을 문장이 없습니다.</p>}
           </details>
           <div className="book-scroll" ref={scrollRef}>
@@ -394,7 +413,9 @@ export default function App() {
               aria-label="읽는 본문"
               dangerouslySetInnerHTML={{ __html: html }}
               onClick={onBookClick}
+              onMouseUp={() => { const selection = window.getSelection(); setSelectedWord(selection && bookRef.current?.contains(selection.anchorNode) ? selection.toString().trim().slice(0, 100) : ""); }}
             />
+            {selectedWord && <button type="button" className="selection-action" onMouseDown={(event) => event.preventDefault()} onClick={() => { setWord(selectedWord); setReading(""); setSelectedWord(""); const panel = editorRef.current?.querySelector(".dictionary"); if (panel) panel.open = true; editorRef.current?.querySelector('[aria-label="읽을 발음"]')?.focus(); }}>선택한 글을 발음 사전에 추가</button>}
           </div>
         </section>
       </main>
@@ -476,6 +497,7 @@ export default function App() {
           <span className="status-dot" hidden={!playing || snapshot.preparing} />
           <p className="status" role="status" aria-live="polite">{status}</p>
         </div>
+        {storageError && <p className="storage-error" role="alert">브라우저에 원고 또는 발음 사전을 저장하지 못했습니다. 사전은 파일로 내보내 보관해 주세요.</p>}
         {snapshot.preparing ? (
           <div className="model-progress" aria-hidden="true">
             <span style={{ width: percent == null ? "18%" : percent + "%" }} />

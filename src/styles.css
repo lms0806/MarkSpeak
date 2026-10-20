@@ -180,6 +180,8 @@ textarea::selection { background: var(--leather); color: #fff8ee; }
 .dictionary[open] { max-height: 45%; overflow: auto; }
 .dictionary-form, .dictionary-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .dictionary-form input { flex: 1 1 7rem; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem; background: var(--desk-raise); }
+.dictionary > label { margin-top: 0.6rem; }
+.dictionary > label input { min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 0.35rem; background: var(--desk-raise); }
 .dictionary button { padding: 0.3rem 0.65rem; }
 .dictionary-list { list-style: none; padding: 0; margin: 0.5rem 0; }
 .dictionary-list li { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; }
@@ -192,6 +194,10 @@ textarea::selection { background: var(--leather); color: #fff8ee; }
 .speech-preview button { display: grid; width: 100%; gap: 0.25rem; text-align: left; border-radius: 6px; }
 .speech-preview button span { color: var(--muted); }
 .speech-preview button strong { color: var(--ink-soft); font-weight: 500; }
+.speech-preview li label { margin: 0.3rem 0; }
+.speech-preview select { padding: 0.2rem 0.5rem; }
+.selection-action { margin: 0.75rem auto; display: block; }
+.storage-error { color: #ffd6a6; font-size: 0.85rem; margin: 0.3rem 0; }
 
 .book-scroll {
   flex: 1;

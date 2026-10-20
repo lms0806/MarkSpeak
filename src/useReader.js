@@ -321,7 +321,7 @@ export function useReader() {
     const cues = next || [];
     const same =
       cues.length === current.cues.length &&
-      cues.every((cue, index) => cue.id === current.cues[index].id && cue.text === current.cues[index].text);
+      cues.every((cue, index) => cue.id === current.cues[index].id && cue.text === current.cues[index].text && cue.pauseAfter === current.cues[index].pauseAfter);
     current.cues = cues;
     if (!same) {
       current.gen += 1;

@@ -47,6 +47,10 @@ assert("윤일 검증", normalizeKoreanSpeech("2024-02-29") === "이천이십사
 assert("버전 번호는 유지", normalizeKoreanSpeech("v2026.10.20과 2026.10.20.1") === "v2026.10.20과 2026.10.20.1");
 assert("전화번호 숫자를 각각 읽는다", normalizeKoreanSpeech("010-1234-5678") === "영 일 영, 일 이 삼 사, 오 육 칠 팔");
 assert("일반 범위는 유지", normalizeKoreanSpeech("10-20") === "10-20");
+assert("시간 표기", normalizeKoreanSpeech("14:30, 00:00, 09:05") === "열네 시 삼십 분, 영 시 정각, 아홉 시 오 분");
+assert("유효하지 않은 시간과 긴 시간 코드는 유지", normalizeKoreanSpeech("25:30 12:60 01:02:03") === "25:30 12:60 01:02:03");
+result = parse("시간은 14:30입니다.");
+assert("원고 시간의 원문과 낭독", result.cues[0].original === "시간은 14:30입니다." && result.cues[0].text === "시간은 열네 시 삼십 분입니다.");
 assert("사전 파싱과 특수 문자", normalizeKoreanSpeech("C++와 AI", parsePronunciations("C++=씨플러스플러스\nAI=인공지능")) === "씨플러스플러스와 인공지능");
 result = parse("가격은 3개입니다. [안내](https://example.com)");
 assert("미리보기는 구간별 원문과 읽을 문장을 보존", result.cues[0].original === "가격은 3개입니다." && result.cues[0].text === "가격은 세 개입니다." && result.cues[1].original === "안내");
