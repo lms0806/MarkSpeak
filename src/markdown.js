@@ -1,3 +1,5 @@
+import { normalizeKoreanSpeech } from "./koreanSpeech.js";
+
 /**
  * 마크다운 원고를 화면과 낭독으로 나눈다.
  *
@@ -428,7 +430,7 @@
         cues.push({
           id: id,
           spanId: spanId,
-          text: bit,
+          text: normalizeKoreanSpeech(bit),
           pauseAfter: index === bits.length - 1 ? pauseAfter : PAUSE.phrase,
         });
       });

@@ -28,6 +28,12 @@ assert("마침표 유지", result.cues[0].text === "안녕." && result.cues[1].t
 result = parse("원주율은 3.14이다. 다음 문장.");
 assert("소수점은 문장이 아니다", result.cues.length === 2 && result.cues[0].text.includes("3.14"));
 
+result = parse("2026년에는 사과 3개와 책 20권을 샀다. 가격은 1,000원이고 할인율은 15%다.");
+assert("연도와 수량을 한국어로 읽는다", result.cues[0].text === "이천이십육 년에는 사과 세 개와 책 스물 권을 샀다.");
+assert("금액과 비율을 한국어로 읽는다", result.cues[1].text === "가격은 천 원이고 할인율은 십오 퍼센트다.");
+assert("표시 원문은 유지한다", result.html.includes("2026년에는") && result.html.includes("3개") && result.html.includes("1,000원"));
+assert("모호한 수와 식별자는 유지한다", texts("3.14와 3개월, v2.0, 0개를 확인한다.").includes("3.14와 3개월, v2.0, 0개"));
+
 result = parse("그는 **천천히** 읽었다.");
 assert("굵은 글씨 기호 제거", result.cues[0].text === "그는 천천히 읽었다.");
 assert("굵게 표시", result.html.includes("<strong>천천히</strong>"));
