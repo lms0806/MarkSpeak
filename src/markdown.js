@@ -335,6 +335,13 @@ import { normalizeKoreanSpeech } from "./koreanSpeech.js";
     var rest = text.trim();
     while (rest.length > limit) {
       var cut = rest.lastIndexOf(" ", limit);
+      // Prefer a natural clause boundary near the limit when one exists.
+      var prefix = rest.slice(0, limit + 1);
+      var clauses = /(?:고|지만|는데|면서|므로|하여|해서)\s/g;
+      var boundary;
+      while ((boundary = clauses.exec(prefix))) {
+        if (boundary.index >= Math.floor(limit * 0.55)) cut = boundary.index + boundary[0].length - 1;
+      }
       if (cut < Math.floor(limit * 0.4)) cut = limit;
       parts.push(rest.slice(0, cut).trim());
       rest = rest.slice(cut).trim();
@@ -408,7 +415,7 @@ import { normalizeKoreanSpeech } from "./koreanSpeech.js";
     return text;
   }
 
-  function parse(markdown) {
+  function parse(markdown, pronunciations = {}) {
     var lines = String(markdown || "")
       .replace(/^\uFEFF/, "")
       .replace(/\r\n/g, "\n")
@@ -430,7 +437,7 @@ import { normalizeKoreanSpeech } from "./koreanSpeech.js";
         cues.push({
           id: id,
           spanId: spanId,
-          text: normalizeKoreanSpeech(bit),
+          text: normalizeKoreanSpeech(bit, pronunciations),
           pauseAfter: index === bits.length - 1 ? pauseAfter : PAUSE.phrase,
         });
       });

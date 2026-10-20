@@ -32,7 +32,15 @@ result = parse("2026년에는 사과 3개와 책 20권을 샀다. 가격은 1,00
 assert("연도와 수량을 한국어로 읽는다", result.cues[0].text === "이천이십육 년에는 사과 세 개와 책 스물 권을 샀다.");
 assert("금액과 비율을 한국어로 읽는다", result.cues[1].text === "가격은 천 원이고 할인율은 십오 퍼센트다.");
 assert("표시 원문은 유지한다", result.html.includes("2026년에는") && result.html.includes("3개") && result.html.includes("1,000원"));
-assert("모호한 수와 식별자는 유지한다", texts("3.14와 3개월, v2.0, 0개를 확인한다.").includes("3.14와 3개월, v2.0, 0개"));
+assert("모호한 수와 식별자는 유지한다", texts("3.14와 v2.0, 0개를 확인한다.").includes("3.14와 v2.0, 0개"));
+
+result = parse("10월 20일 오후 3시 30분에 3개월 동안 100명과 1.5kg, -3도를 확인한다.");
+assert("날짜 시간과 단위", result.cues.map((cue) => cue.text).join(" ").includes("시 월 이십 일 오후 세 시 삼십 분에 삼 개월 동안 백 명과 일 점 오 킬로그램, 마이너스 삼 도"));
+assert("유월", texts("6월에 만난다.").includes("유 월"));
+result = parse("AI와 API, MarkSpeak를 읽는다.", { AI: "인공지능", MarkSpeak: "마크 스피크" });
+assert("사용자 사전은 기본 발음보다 우선", result.cues[0].text === "인공지능와 에이피아이, 마크 스피크를 읽는다.");
+assert("사전은 원문을 바꾸지 않음", result.html.includes("AI와 API, MarkSpeak"));
+assert("약어의 일부는 바꾸지 않음", texts("TRAIN과 API_key").includes("TRAIN과 API_key"));
 
 result = parse("그는 **천천히** 읽었다.");
 assert("굵은 글씨 기호 제거", result.cues[0].text === "그는 천천히 읽었다.");
@@ -95,7 +103,7 @@ assert("빈 줄 없어도 목록", texts("본문이다.\n- 항목") === "본문�
 
 const long = "1,000명이 모인 넓은 광장에서 그는 한참을 서 있었고, 아무도 먼저 입을 열지 않았다.";
 result = parse(long);
-assert("천 단위 쉼표는 자르지 않음", result.cues[0].text.includes("1,000"));
+assert("천 단위 쉼표를 수량으로 읽음", result.cues[0].text.includes("천 명"));
 assert("쉼표에서 숨을 나눈다", result.cues.length >= 2);
 assert("뒷절이 남는다", result.cues.map((cue) => cue.text).join("").includes("입을 열지 않았다"));
 

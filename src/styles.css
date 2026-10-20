@@ -173,6 +173,11 @@ textarea::selection { background: var(--leather); color: #fff8ee; }
   outline-offset: -10px;
 }
 
+.dictionary { padding: 0.5rem 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; }
+.dictionary summary { cursor: pointer; color: var(--ink-soft); }
+.dictionary p { margin: 0.45rem 0; color: var(--muted); }
+.dictionary textarea { display: block; height: 6rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
+
 .book-scroll {
   flex: 1;
   min-height: 0;

@@ -3,10 +3,12 @@ import { parse } from "./markdown.js";
 import { SAMPLE } from "./sample.js";
 import { VOICE_LABEL } from "./tts.js";
 import { useReader } from "./useReader.js";
+import { parsePronunciations } from "./koreanSpeech.js";
 
 const DRAFT_KEY = "markspeak.draft";
 const RATE_KEY = "markspeak.rate";
 const BREATH_KEY = "markspeak.breath";
+const DICTIONARY_KEY = "markspeak.pronunciations";
 const EMPTY_HTML =
   '<div class="empty"><p>왼쪽 원고에 마크다운을 넣으면<br>이곳에 책처럼 펼쳐집니다.</p></div>';
 
@@ -48,8 +50,8 @@ function readInitialSource() {
   return draft === null ? SAMPLE : draft;
 }
 
-function renderSource(value) {
-  const parsed = parse(value);
+function renderSource(value, dictionary = "") {
+  const parsed = parse(value, parsePronunciations(dictionary));
   const hasBook = Boolean(parsed.html.trim());
   return {
     html: hasBook ? parsed.html : EMPTY_HTML,
@@ -79,9 +81,10 @@ export default function App() {
   const fileRef = useRef(null);
   const sourceRef = useRef("");
   const [source, setSource] = useState(readInitialSource);
-  const [html, setHtml] = useState(() => renderSource(readInitialSource()).html);
-  const [empty, setEmpty] = useState(() => renderSource(readInitialSource()).empty);
-  const [cues, setCues] = useState(() => renderSource(readInitialSource()).cues);
+  const [dictionary, setDictionary] = useState(() => storageGet(DICTIONARY_KEY) || "");
+  const [html, setHtml] = useState(() => renderSource(readInitialSource(), storageGet(DICTIONARY_KEY)).html);
+  const [empty, setEmpty] = useState(() => renderSource(readInitialSource(), storageGet(DICTIONARY_KEY)).empty);
+  const [cues, setCues] = useState(() => renderSource(readInitialSource(), storageGet(DICTIONARY_KEY)).cues);
   const [seeking, setSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
   const [dragOver, setDragOver] = useState(false);
@@ -92,12 +95,13 @@ export default function App() {
   useEffect(() => {
     sourceRef.current = source;
     const apply = () => {
-      const next = renderSource(source);
+      const next = renderSource(source, dictionary);
       setHtml(next.html);
       setEmpty(next.empty);
       setCues(next.cues);
       reader.setCues(next.cues);
       storageSet(DRAFT_KEY, source);
+      storageSet(DICTIONARY_KEY, dictionary);
     };
     if (firstRender.current) {
       firstRender.current = false;
@@ -106,7 +110,7 @@ export default function App() {
     }
     const timer = setTimeout(apply, 80);
     return () => clearTimeout(timer);
-  }, [source, reader.setCues]);
+  }, [source, dictionary, reader.setCues]);
 
   useEffect(() => {
     const book = bookRef.current;
@@ -300,6 +304,15 @@ export default function App() {
               event.target.value = "";
             }}
           />
+          <details className="dictionary">
+            <summary>내 발음 사전</summary>
+            <p>한 줄에 하나씩 원문=읽을 발음을 입력하세요. 이 브라우저에 저장됩니다.</p>
+            <label className="visually-hidden" htmlFor="pronunciations">내 발음 사전</label>
+            <textarea id="pronunciations" value={dictionary} placeholder={"MarkSpeak=마크스피크\nAPI=에이피아이"} onChange={(event) => {
+              if (active) reader.stop();
+              setDictionary(event.target.value);
+            }} />
+          </details>
         </section>
 
         <section className="pane book-pane" aria-label="책">
